@@ -79,6 +79,6 @@ register_definition() {
 
 }
 
-configure_aws_cli
+# configure_aws_cli
 push_dockerhub_image
 # deploy_cluster
