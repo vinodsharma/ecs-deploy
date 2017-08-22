@@ -10,8 +10,8 @@ test:
   post:
     - docker run --name sample-python-webapp vinod/py-ecs python main.py
 
-# deployment:
-#   prod:
-#     branch: master
-#     commands:
-#       - ./deploy.sh
+deployment:
+  prod:
+    branch: master
+    commands:
+      - ./deploy.sh
