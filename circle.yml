@@ -4,14 +4,14 @@ machine:
 
 dependencies:
   post:
-    - docker build -t vinod/go-ecs .
+    - docker build -t vinod/py-ecs .
 
 test:
   post:
-    - docker run --name sample-go-webapp vinod/go-ecs python main.py
+    - docker run --name sample-python-webapp vinod/go-ecs python main.py
 
-deployment:
-  prod:
-    branch: master
-    commands:
-      - ./deploy.sh
+# deployment:
+#   prod:
+#     branch: master
+#     commands:
+#       - ./deploy.sh

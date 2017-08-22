@@ -1,7 +1,8 @@
 # Building on top of Ubuntu 14.04. The best distro around.
-FROM ubuntu:14.04
+FROM gobble/python:2.7-devel
 
-COPY ./ecs-deploy /opt/
-EXPOSE 8080
 
-ENTRYPOINT ["/opt/go-ecs-ecr"]
+COPY ./ecs-deploy /opt/ecs-deploy
+WORKDIR /opt/ecs-deploy/
+
+# ENTRYPOINT ["/opt/ecs-deploy"]
