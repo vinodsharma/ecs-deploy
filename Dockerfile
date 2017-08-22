@@ -2,7 +2,7 @@
 FROM gobble/python:2.7-devel
 
 
-COPY ./ecs-deploy /opt/ecs-deploy
-WORKDIR /opt/ecs-deploy/
+COPY . /opt/
+WORKDIR /opt/
 
 # ENTRYPOINT ["/opt/ecs-deploy"]
