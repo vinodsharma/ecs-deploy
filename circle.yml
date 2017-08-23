@@ -4,6 +4,8 @@ machine:
 
 dependencies:
   post:
+    - setup_remote_docker:
+          version: 17.05.0-ce
     - docker build -t vinodsharma/py-ecs .
 
 test:
