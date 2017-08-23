@@ -1,21 +1,24 @@
-
 version: 2
 jobs:
   build:
     docker:
       - image: vinodsharma/python:2.7-devel   # (1)
-    working_directory: /opt/
+    # working_directory: /opt/
     steps:
 
       - checkout
 
       - setup_remote_docker   # (2)
 
-      # build and push Docker image
       - run:
           name: Building Thestral Image
           command: |
             docker build -t   vinodsharma/circleci-demo-docker:$CIRCLE_SHA1 .
+
+      - run:
+          name: Running Tests
+          command: |
+            python tests/test_*.py
 
 
       - deploy:

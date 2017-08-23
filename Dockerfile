@@ -2,7 +2,7 @@
 FROM vinodsharma/python:2.7-devel
 
 
-COPY . /opt/
-WORKDIR /opt/
+# COPY . /opt/
+# WORKDIR /opt/
 
 # ENTRYPOINT ["/opt/ecs-deploy"]
