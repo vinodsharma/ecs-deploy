@@ -24,5 +24,5 @@ jobs:
       - run: |
           TAG=0.1.$CIRCLE_BUILD_NUM
           docker build -t   vinodsharma/circleci-demo-docker:$TAG .      # (3)
-          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD         # (4)
+          docker login -u $DOCKER_USER -p $DOCKER_PASSWORD docker.io         # (4)
           docker push vinodsharma/circleci-demo-docker:$TAG
