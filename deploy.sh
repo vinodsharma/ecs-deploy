@@ -65,17 +65,11 @@ push_ecr_image(){
 
 push_dockerhub_image(){
   echo "Running push_dockerhub_image Started"
-  # docker login --no-include-email -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-	# docker push vinod/py-ecs:$CIRCLE_SHA1
-	# docker push vinod/py-ecs
-	eval $(aws ecr get-login --no-include-email --region us-west-2)
+  docker login -e "vinodsharma.mimit@gmail.com" -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
   echo "Login Completed"
-  docker tag vinod/py-ecs:latest $AWS_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/vinod/py-ecs:latest
-  echo "Image Tagging Completed"
-	# docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/go-sample-webapp:$CIRCLE_SHA1
-  docker push $AWS_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/vinod/py-ecs:latest
+	docker push vinod/py-ecs
   echo "Pushing image completed"
-  echo "Running push_dockerhub_image End"
+  echo "Running push_dockerhub_image Ended"
 }
 
 push_dockerhub_image2(){
