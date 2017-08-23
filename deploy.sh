@@ -64,14 +64,33 @@ push_ecr_image(){
 }
 
 push_dockerhub_image(){
-  echo "Running push_dockerhub_image"
+  echo "Running push_dockerhub_image Started"
   # docker login --no-include-email -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 	# docker push vinod/py-ecs:$CIRCLE_SHA1
 	# docker push vinod/py-ecs
 	eval $(aws ecr get-login --no-include-email --region us-west-2)
+  echo "Login Completed"
   docker tag vinod/py-ecs:latest $AWS_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/vinod/py-ecs:latest
+  echo "Image Tagging Completed"
 	# docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/go-sample-webapp:$CIRCLE_SHA1
   docker push $AWS_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/vinod/py-ecs:latest
+  echo "Pushing image completed"
+  echo "Running push_dockerhub_image End"
+}
+
+push_dockerhub_image2(){
+  echo "Running push_dockerhub_image Started"
+  # docker login --no-include-email -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+	# docker push vinod/py-ecs:$CIRCLE_SHA1
+	# docker push vinod/py-ecs
+	eval $(aws ecr get-login --no-include-email --region us-west-2)
+  echo "Login Completed"
+  docker tag vinod/py-ecs:latest $AWS_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/vinod/py-ecs:latest
+  echo "Image Tagging Completed"
+	# docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/go-sample-webapp:$CIRCLE_SHA1
+  docker push $AWS_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/vinod/py-ecs:latest
+  echo "Pushing image completed"
+  echo "Running push_dockerhub_image End"
 }
 
 register_definition() {
@@ -86,7 +105,5 @@ register_definition() {
 }
 
 configure_aws_cli
-echo "Pushing to dockerhub Started"
 push_dockerhub_image
-echo "Pushing to dockerhub Ended"
 # deploy_cluster
