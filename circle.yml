@@ -2,8 +2,8 @@ version: 2
 jobs:
   build:
     docker:
-      - image: golang:1.6.4   # (1)
-    working_directory: /go/src/github.com/CircleCI-Public/circleci-demo-docker
+      - image: gobble/python:2.7-devel   # (1)
+    working_directory: /opt/
     steps:
       - checkout
 
