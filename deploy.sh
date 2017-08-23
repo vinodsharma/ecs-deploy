@@ -67,7 +67,7 @@ push_dockerhub_image(){
   echo "Running push_dockerhub_image Started"
   docker login -e "vinodsharma.mimit@gmail.com" -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
   echo "Login Completed"
-	docker push vinod/py-ecs
+	docker push vinodsharma/py-ecs
   echo "Pushing image completed"
   echo "Running push_dockerhub_image Ended"
 }

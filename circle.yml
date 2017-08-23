@@ -4,11 +4,11 @@ machine:
 
 dependencies:
   post:
-    - docker build -t vinod/py-ecs .
+    - docker build -t vinodsharma/py-ecs .
 
 test:
   post:
-    - docker run --name sample-python-webapp vinod/py-ecs python main.py
+    - docker run --name sample-python-webapp vinodsharma/py-ecs python main.py
 
 deployment:
   prod:
