@@ -65,7 +65,8 @@ push_ecr_image(){
 
 push_dockerhub_image(){
   docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-	docker push vinod/py-ecs:$CIRCLE_SHA1
+	# docker push vinod/py-ecs:$CIRCLE_SHA1
+	# docker push vinod/py-ecs
 }
 
 register_definition() {
