@@ -6,7 +6,6 @@ jobs:
       - image: vinodsharma/python:2.7-devel   # (1)
     working_directory: /opt/
     steps:
-      TAG=0.1.$CIRCLE_BUILD_NUM
 
       - checkout
 
@@ -14,11 +13,13 @@ jobs:
 
       # build and push Docker image
       - run: |
+          TAG=0.1.$CIRCLE_BUILD_NUM
           docker build -t   vinodsharma/circleci-demo-docker:$TAG .      # (3)
 
-      # - run: |
-      #     docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD      # (4)
-      #     docker push vinodsharma/circleci-demo-docker:$TAG
+      - run: |
+          TAG=0.1.$CIRCLE_BUILD_NUM
+          docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD      # (4)
+          docker push vinodsharma/circleci-demo-docker:$TAG
 
       # - deploy:
       #     TAG=0.1.$CIRCLE_BUILD_NUM
