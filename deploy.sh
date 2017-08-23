@@ -65,9 +65,12 @@ push_ecr_image(){
 
 push_dockerhub_image(){
   echo "Running push_dockerhub_image"
-  docker login --no-include-email -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+  # docker login --no-include-email -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 	# docker push vinod/py-ecs:$CIRCLE_SHA1
 	# docker push vinod/py-ecs
+	eval $(aws ecr get-login --no-include-email --region us-west-2)
+	# docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/go-sample-webapp:$CIRCLE_SHA1
+  docker push 156083142943.dkr.ecr.us-west-2.amazonaws.com/ecs-deploy:latest
 }
 
 register_definition() {
