@@ -1,5 +1,5 @@
 # Building on top of Ubuntu 14.04. The best distro around.
-FROM gobble/python:2.7-devel
+FROM vinodsharma/python:2.7-devel
 
 
 COPY . /opt/
