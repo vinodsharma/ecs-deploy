@@ -14,15 +14,10 @@ jobs:
           echo $TAG
           docker build -t  vinodsharma/circleci-demo-docker:$TAG
 
-      - run:
-          name: run tests
-          command: |
-            python tests/test_*.py
-
-      - deploy:
-          name: Deploy to AWS
-          command: |
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-              docker push vinodsharma/circleci-demo-docker:$TAG
-            fi
+      # - deploy:
+      #     name: Deploy to AWS
+      #     command: |
+      #       if [ "${CIRCLE_BRANCH}" == "master" ]; then
+      #         docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      #         docker push vinodsharma/circleci-demo-docker:$TAG
+      #       fi
