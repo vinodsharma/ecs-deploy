@@ -25,8 +25,7 @@ jobs:
           name: Deploying to AWS
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-              docker push vinodsharma/circleci-demo-docker:$CIRCLE_SHA1
+              # docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+              # docker push vinodsharma/circleci-demo-docker:$CIRCLE_SHA1
+              ./deploy.sh
             fi
-            # docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-            # docker push vinodsharma/circleci-demo-docker:$CIRCLE_SHA1
