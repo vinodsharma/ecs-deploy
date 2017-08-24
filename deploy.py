@@ -1,31 +1,7 @@
 # from os.path import join, dirname
 # from dotenv import load_dotenv
-# import boto3
-
-
 # dotenv_path = join(dirname('.'), '.env')
 # load_dotenv(dotenv_path)
-#
-#
-# def put_rule(client):
-#     response = client.put_rule(
-#         Name='my-scheduled-rule',
-#         ScheduleExpression='rate(1 minute)',
-#         State='ENABLED',
-#         Description='Invoke lambda function every minute',
-#     )
-#     print response.keys()
-#
-# def put_permission():
-#     response = client.put_permission(
-#     Action='lambda:InvokeFunction',
-#     Principal='events.amazonaws.com',
-#     StatementId='my-scheduled-event'
-# )
-#
-# if __name__ == "__main__":
-#     client = boto3.client('events')
-#     put_rule(client)
 
 
 import boto3
