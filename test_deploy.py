@@ -16,19 +16,21 @@ def get_lambda_function_arn(fn_name):
     return response['FunctionArn']
 
 
-try:
-    fn_response = lambda_client.create_function(
-        FunctionName=fn_name,
-        Runtime='python2.7',
-        Role=fn_role,
-        Handler="{0}.lambda_handler".format(fn_name),
-        Code={'ZipFile': open("{0}.zip".format(fn_name), 'rb').read(), },
-    )
-except BotoClientError as bce:
-    if not bce.response['Error']['Code'] == 'ResourceConflictException':
-        raise
+def create_function():
+    try:
+        lambda_client.create_function(
+            FunctionName=fn_name,
+            Runtime='python2.7',
+            Role=fn_role,
+            Handler="{0}.lambda_handler".format(fn_name),
+            Code={'ZipFile': open("{0}.zip".format(fn_name), 'rb').read(), },
+        )
+    except BotoClientError as bce:
+        if not bce.response['Error']['Code'] == 'ResourceConflictException':
+            raise
 
- 
+
+create_function()
 fn_arn = get_lambda_function_arn(fn_name)
 frequency = "rate(1 minute)"
 name = "{0}-Trigger".format(fn_name)
