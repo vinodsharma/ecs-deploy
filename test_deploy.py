@@ -1,25 +1,22 @@
 import boto3
 from botocore.exceptions import ClientError as BotoClientError
- 
-lambda_client = boto3.client('lambda')
-events_client = boto3.client('events')
 
 
-def get_function_arn(fn_name):
+def get_function_arn(lambda_client, fn_name):
     response = lambda_client.get_function_configuration(
         FunctionName=fn_name
     )
     return response['FunctionArn']
 
 
-def get_rule_arn(rule_name):
+def get_rule_arn(events_client, rule_name):
     response = events_client.describe_rule(
         Name=rule_name
     )
     return response['Arn']
 
 
-def create_function(fn_role, fn_name):
+def create_function(lambda_client, fn_role, fn_name):
     try:
         lambda_client.create_function(
             FunctionName=fn_name,
@@ -33,7 +30,7 @@ def create_function(fn_role, fn_name):
             raise
 
 
-def put_rule(rule_name):
+def put_rule(events_client, rule_name):
     events_client.put_rule(
         Name=rule_name,
         ScheduleExpression=frequency,
@@ -41,21 +38,21 @@ def put_rule(rule_name):
     )
 
 
-def add_permissions(fn_name, rule_name):
+def add_permissions(lambda_client, events_client, fn_name, rule_name):
     try:
         lambda_client.add_permission(
             FunctionName=fn_name,
             StatementId="{0}-Event".format(rule_name),
             Action='lambda:InvokeFunction',
             Principal='events.amazonaws.com',
-            SourceArn=get_rule_arn(rule_name),
+            SourceArn=get_rule_arn(events_client, rule_name),
         )
     except BotoClientError as bce:
         if not bce.response['Error']['Code'] == 'ResourceConflictException':
             raise
 
 
-def put_targets(fn_arn, rule_name):
+def put_targets(events_client, fn_arn, rule_name):
     events_client.put_targets(
         Rule=rule_name,
         Targets=[
@@ -68,15 +65,17 @@ def put_targets(fn_arn, rule_name):
 
 
 if __name__ == "__main__":
+    lambda_client = boto3.client('lambda')
+    events_client = boto3.client('events')
     aws_account_id = '156083142943'
     fn_name = "HelloWorld"
     fn_role = 'arn:aws:iam::' + aws_account_id +\
         ':role/lambda_basic_execution'
 
-    create_function(fn_role, fn_name)
-    fn_arn = get_function_arn(fn_name)
+    create_function(lambda_client, fn_role, fn_name)
+    fn_arn = get_function_arn(lambda_client, fn_name)
     frequency = "rate(1 minute)"
     rule_name = "{0}-Trigger".format(fn_name)
-    put_rule(rule_name)
-    add_permissions(fn_name, rule_name)
-    put_targets(fn_arn, rule_name)
+    put_rule(events_client, rule_name)
+    add_permissions(lambda_client, events_client, fn_name, rule_name)
+    put_targets(events_client, fn_arn, rule_name)
