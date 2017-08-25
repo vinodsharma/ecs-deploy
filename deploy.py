@@ -25,7 +25,7 @@ def read_deploy_config():
     configuration = {
             'AWS_ACCESS_KEY_ID': os.getenv('AWS_ACCESS_KEY_ID'),
             'AWS_SECRET_ACCESS_KEY': os.getenv('AWS_SECRET_ACCESS_KEY'),
-            'CIRCLE_SHA1': os.getenv('CIRCLE_SHA1'),
+            'DOCKER_IMAGE': os.getenv('DOCKER_IMAGE'),
     }
     return configuration
 
@@ -257,10 +257,7 @@ if __name__ == "__main__":
     job_definition_name = 'M4OnDemandJobDefinition'
     job_name = 'M4OnDemandJob'
     instance_types = ['m4.large']
-    docker_repo = "vinodsharma/circleci-demo-docker"
-    # docker_image_tag = "459049b9305ed6d5b74f62fe5c06c7620b5e7214"
-    docker_image_tag = deploy_conf["CIRCLE_SHA1"]
-    docker_image = docker_repo + ":" + docker_image_tag
+    docker_image = deploy_conf["DOCKER_IMAGE"]
 
     if not is_compute_env_exists(batch_client, compute_env_name):
         create_compute_env(
