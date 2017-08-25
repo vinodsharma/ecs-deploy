@@ -89,7 +89,7 @@ def register_job_definition(batch_client, job_definition_name, docker_image):
                 '10',
             ],
             'image': docker_image,
-            'memory': 1024*7,
+            'memory': 1024*6,
             'vcpus': 2,
         },
         jobDefinitionName=job_definition_name,
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     job_queue_name = 'M4OnDemandQueue'
     job_definition_name = 'M4OnDemandJobDefinition'
     job_name = 'M4OnDemandJob'
-    instance_types = ['m4.large', 'm4.xlarge', 'm4.2xlarge']
+    instance_types = ['m4.large']
     docker_repo = "vinodsharma/circleci-demo-docker"
     docker_image_tag = "459049b9305ed6d5b74f62fe5c06c7620b5e7214"
     docker_image = docker_repo + ":" + docker_image_tag
