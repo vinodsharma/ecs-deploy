@@ -27,6 +27,8 @@ jobs:
           name: Deploying to AWS
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
+	            aws configure set default.region us-west-2
+            	aws configure set default.output json
               docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
               # docker push vinodsharma/circleci-demo-docker:$CIRCLE_SHA1
               docker push $DOCKER_IMAGE
