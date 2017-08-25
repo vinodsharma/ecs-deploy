@@ -1,82 +1,96 @@
 import boto3
-from botocore.exceptions import ClientError as BotoClientError
 
 
-aws_account_id = '156083142943'
-client = boto3.client('batch')
-compute_env_name = 'V3_M4OnDemand'
-job_queue_name = 'M4OnDemandQueue'
-job_definition_name = 'M4OnDemandJobDefinition'
-job_name = 'M4OnDemandJob'
-
-instance_types = ['m4.large', 'm4.xlarge', 'm4.2xlarge']
-
-
-def create_computing_environment():
-    try:
-        response = client.create_compute_environment(
-            type='MANAGED',
-            computeEnvironmentName=compute_env_name,
-            computeResources={
-                'type': 'EC2',
-                'desiredvCpus': 2,
-                'instanceRole': 'ecsInstanceRole',
-                'instanceTypes': instance_types,
-                'maxvCpus': 8,
-                'minvCpus': 2,
-                'securityGroupIds': [
-                    'sg-6b10f90e',
-                ],
-                'subnets': [
-                    'subnet-e77c9d82',
-                    'subnet-350d0d41',
-                    'subnet-e0a380a6',
-                ],
-                'tags': {
-                    'Name': 'Batch Instance - C4OnDemand',
-                },
-            },
-            serviceRole='arn:aws:iam::' + aws_account_id +
-            ':role/service-role/AWSBatchServiceRole',
-            state='ENABLED',
-        )
-
-        print(response)
-    except BotoClientError as bce:
-        if not bce.response['Error']['Code'] == 'ClientException':
-            raise
+def is_compute_env_exists(batch_client, compute_env_name):
+    response = batch_client.describe_compute_environments(
+        computeEnvironments=[
+            compute_env_name,
+        ],
+    )
+    if len(response['computeEnvironments']) == 1:
+        return True
+    else:
+        return False
 
 
-def create_job_queue():
-    try:
-        response = client.create_job_queue(
-            computeEnvironmentOrder=[
-                {
-                    'computeEnvironment': compute_env_name,
-                    'order': 1,
-                },
+def is_job_queue_exists(batch_client, job_queue_name):
+    response = batch_client.describe_job_queues(
+        jobQueues=[
+            job_queue_name,
+        ],
+    )
+
+    if len(response['jobQueues']) == 1:
+        return True
+    else:
+        return False
+
+
+def is_job_definition_exists(batch_client, job_definition_name):
+    response = batch_client.describe_job_definitions(
+        jobDefinitionName=job_definition_name,
+    )
+    if len(response['jobDefinitions']) >= 1:
+        return True
+    else:
+        return False
+
+
+def create_compute_env(batch_client, compute_env_name,
+                       instance_types, aws_account_id):
+    batch_client.create_compute_environment(
+        type='MANAGED',
+        computeEnvironmentName=compute_env_name,
+        computeResources={
+            'type': 'EC2',
+            'desiredvCpus': 2,
+            'instanceRole': 'ecsInstanceRole',
+            'instanceTypes': instance_types,
+            'maxvCpus': 256,
+            'minvCpus': 2,
+            'securityGroupIds': [
+                'sg-6b10f90e',
             ],
-            jobQueueName=job_queue_name,
-            priority=1,
-            state='ENABLED',
-        )
-        print(response)
-    except BotoClientError as bce:
-            if not bce.response['Error']['Code'] == 'ClientException':
-                raise
+            'subnets': [
+                'subnet-e77c9d82',
+                'subnet-350d0d41',
+                'subnet-e0a380a6',
+            ],
+            'tags': {
+                'Name': 'Batch Instance - C4OnDemand',
+            },
+        },
+        serviceRole='arn:aws:iam::' + aws_account_id +
+        ':role/service-role/AWSBatchServiceRole',
+        state='ENABLED',
+    )
 
 
-def register_job_definition():
-    response = client.register_job_definition(
+def create_job_queue(batch_client, job_queue_name):
+    batch_client.create_job_queue(
+        computeEnvironmentOrder=[
+            {
+                'computeEnvironment': compute_env_name,
+                'order': 1,
+            },
+        ],
+        jobQueueName=job_queue_name,
+        priority=1,
+        state='ENABLED',
+    )
+
+
+def register_job_definition(batch_client, job_definition_name, docker_image):
+    response = batch_client.register_job_definition(
         type='container',
         containerProperties={
             'command': [
                 'sleep',
                 '10',
             ],
-            'image': 'busybox',
-            'memory': 128,
-            'vcpus': 1,
+            'image': docker_image,
+            'memory': 1024*7,
+            'vcpus': 2,
         },
         jobDefinitionName=job_definition_name,
     )
@@ -84,8 +98,8 @@ def register_job_definition():
     print(response)
 
 
-def submit_job():
-    response = client.submit_job(
+def submit_job(batch_client, job_definition_name, job_name, job_queue_name):
+    response = batch_client.submit_job(
         jobDefinition=job_definition_name,
         jobName=job_name,
         jobQueue=job_queue_name,
@@ -94,7 +108,24 @@ def submit_job():
     print(response)
 
 
-create_computing_environment()
-create_job_queue()
-register_job_definition()
-submit_job()
+if __name__ == "__main__":
+    aws_account_id = '156083142943'
+    batch_client = boto3.client('batch')
+    compute_env_name = 'V3_M4OnDemand'
+    job_queue_name = 'M4OnDemandQueue'
+    job_definition_name = 'M4OnDemandJobDefinition'
+    job_name = 'M4OnDemandJob'
+    instance_types = ['m4.large', 'm4.xlarge', 'm4.2xlarge']
+    docker_repo = "vinodsharma/circleci-demo-docker"
+    docker_image_tag = "459049b9305ed6d5b74f62fe5c06c7620b5e7214"
+    docker_image = docker_repo + ":" + docker_image_tag
+
+    if not is_compute_env_exists(batch_client, compute_env_name):
+        create_compute_env(
+            batch_client, compute_env_name,
+            instance_types,  aws_account_id
+        )
+    if not is_job_queue_exists(batch_client, job_queue_name):
+        create_job_queue(batch_client, job_queue_name)
+    register_job_definition(batch_client, job_definition_name, docker_image)
+    submit_job(batch_client, job_definition_name, job_name, job_queue_name)

@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError as BotoClientError
+import subprocess
 
 
 def get_function_arn(lambda_client, fn_name):
@@ -9,6 +10,35 @@ def get_function_arn(lambda_client, fn_name):
     return response['FunctionArn']
 
 
+def get_function(lambda_client, fn_name):
+    response = lambda_client.get_function(
+        FunctionName=fn_name
+    )
+    return response
+
+
+def is_function_exists(lambda_client, fn_name):
+    try:
+        get_function(lambda_client, fn_name)
+        return True
+    except BotoClientError as bce:
+        if bce.response['Error']['Code'] == 'ResourceNotFoundException':
+            return False
+        raise
+
+
+def update_function(lambda_client, fn_name):
+    zip_file_name = fn_name + ".zip"
+    code_file_name = fn_name + ".py"
+    create_zip_file_for_code(zip_file_name, code_file_name)
+    response = lambda_client.update_function_code(
+        FunctionName=fn_name,
+        Publish=True,
+        ZipFile=open("{0}.zip".format(fn_name), 'rb').read()
+    )
+    print(response)
+
+
 def get_rule_arn(events_client, rule_name):
     response = events_client.describe_rule(
         Name=rule_name
@@ -16,7 +46,14 @@ def get_rule_arn(events_client, rule_name):
     return response['Arn']
 
 
+def create_zip_file_for_code(zip_file_name, code_file_name):
+    subprocess.check_output(["zip", zip_file_name, code_file_name])
+
+
 def create_function(lambda_client, fn_role, fn_name):
+    zip_file_name = fn_name + ".zip"
+    code_file_name = fn_name + ".py"
+    create_zip_file_for_code(zip_file_name, code_file_name)
     try:
         lambda_client.create_function(
             FunctionName=fn_name,
@@ -70,8 +107,10 @@ if __name__ == "__main__":
     aws_account_id = '156083142943'
     fn_name = "HelloWorld"
     fn_role = 'arn:aws:iam::' + aws_account_id +\
-        ':role/lambda_basic_execution'
+        ':role/service-role/BatchRole'
 
+    if is_function_exists(lambda_client, fn_name):
+        update_function(lambda_client, fn_name)
     create_function(lambda_client, fn_role, fn_name)
     fn_arn = get_function_arn(lambda_client, fn_name)
     frequency = "rate(1 minute)"
