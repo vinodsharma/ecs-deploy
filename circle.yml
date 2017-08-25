@@ -10,10 +10,12 @@ jobs:
 
       - setup_remote_docker   # (2)
 
+      - run: echo 'export DOCKER_IMAGE=vinodsharma/circleci-demo-docker:$CIRCLE_SHA1' >> $BASH_ENV
       - run:
           name: Building Thestral Image
           command: |
-            docker build -t   vinodsharma/circleci-demo-docker:$CIRCLE_SHA1 .
+            # docker build -t   vinodsharma/circleci-demo-docker:$CIRCLE_SHA1 .
+            docker build -t  $DOCKER_IMAGE .
 
       - run:
           name: Running Tests
@@ -25,7 +27,8 @@ jobs:
           name: Deploying to AWS
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              # docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
               # docker push vinodsharma/circleci-demo-docker:$CIRCLE_SHA1
-              ./deploy.sh
+              docker push $DOCKER_IMAGE
+              python deploy.py
             fi

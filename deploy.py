@@ -207,8 +207,8 @@ def register_job_definition(batch_client, job_definition_name, docker_image):
         type='container',
         containerProperties={
             'command': [
-                'sleep',
-                '10',
+                'python',
+                'thestral_app.py',
             ],
             'image': docker_image,
             'memory': 1024*6,
