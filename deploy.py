@@ -232,9 +232,10 @@ def submit_job(batch_client, job_definition_name, job_name, job_queue_name):
 
 if __name__ == "__main__":
     deploy_conf = read_deploy_config()
+    # lambda_client = boto3.client('lambda', region_name='us-west-2')
+    # events_client = boto3.client('events', region_name='us-west-2')
     lambda_client = boto3.client('lambda')
     events_client = boto3.client('events')
-    iam_client = boto3.client('iam')
     aws_account_id = '156083142943'
     fn_name = "HelloWorld"
     fn_role = 'arn:aws:iam::' + aws_account_id +\
@@ -244,19 +245,23 @@ if __name__ == "__main__":
         update_function(lambda_client, fn_name)
     else:
         create_function(lambda_client, fn_role, fn_name)
+    logger.info("Lamba function created")
     fn_arn = get_function_arn(lambda_client, fn_name)
     frequency = "rate(1 hour)"
     rule_name = "{0}-Trigger".format(fn_name)
     put_rule(events_client, rule_name)
     add_permissions(lambda_client, events_client, fn_name, rule_name)
     put_targets(events_client, fn_arn, rule_name)
+    logger.info("Trigger Added")
 
     batch_client = boto3.client('batch')
-    compute_env_name = 'V3_M4OnDemand'
-    job_queue_name = 'M4OnDemandQueue'
+    # batch_client = boto3.client('batch', region_name='us-west-2')
+    compute_env_name = 'V4_M4OnDemand'
+    job_queue_name = 'V4_M4OnDemandQueue'
     job_definition_name = 'M4OnDemandJobDefinition'
     job_name = 'M4OnDemandJob'
-    instance_types = ['m4.large']
+    # instance_types = ['m4.large']
+    instance_types = ['optimal']
     docker_image = deploy_conf["DOCKER_IMAGE"]
 
     if not is_compute_env_exists(batch_client, compute_env_name):
