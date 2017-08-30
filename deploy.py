@@ -229,21 +229,7 @@ def get_subnet_ids(vpc_id):
 
 def create_compute_env(compute_env_name, aws_account_id):
     vpc_id = get_default_vpc_id()
-    instance_types = [
-        'optimal', 'c3', 'c3.2xlarge', 'c3.4xlarge', 'c3.8xlarge', 'c3.large',
-        'c3.xlarge', 'c4', 'c4.2xlarge', 'c4.4xlarge', 'c4.8xlarge',
-        'c4.large', 'c4.xlarge', 'd2', 'd2.2xlarge', 'd2.4xlarge',
-        'd2.8xlarge', 'd2.xlarge', 'g2', 'g2.2xlarge', 'g2.8xlarge', 'g3',
-        'g3.16xlarge', 'g3.4xlarge', 'g3.8xlarge', 'i2', 'i2.2xlarge',
-        'i2.4xlarge', 'i2.8xlarge', 'i2.xlarge', 'i3', 'i3.16xlarge',
-        'i3.2xlarge', 'i3.4xlarge', 'i3.8xlarge', 'i3.xlarge', 'm3',
-        'm3.2xlarge', 'm3.large', 'm3.medium', 'm3.xlarge', 'm4',
-        'm4.10xlarge', 'm4.16xlarge', 'm4.2xlarge', 'm4.4xlarge', 'm4.large',
-        'm4.xlarge', 'p2', 'p2.16xlarge', 'p2.8xlarge', 'p2.xlarge', 'r3',
-        'r3.2xlarge', 'r3.4xlarge', 'r3.8xlarge', 'r3.large', 'r3.xlarge',
-        'r4', 'r4.16xlarge', 'r4.2xlarge', 'r4.4xlarge', 'r4.8xlarge',
-        'r4.large', 'r4.xlarge', 'x1', 'x1.16xlarge', 'x1.32xlarge'
-    ]
+    instance_types = ['optimal', 'm4']
     batch_client.create_compute_environment(
         type='MANAGED',
         computeEnvironmentName=compute_env_name,
@@ -348,8 +334,8 @@ def main():
     put_targets(fn_arn, rule_name)
     logger.info("Cloudwatch trigger %s added/updated" % rule_name)
 
-    compute_env_name = 'thestral_comp_env'
-    job_queue_name = 'thestral_job_queue'
+    compute_env_name = 'thestral_comp_env_v1'
+    job_queue_name = 'thestral_job_queue_v1'
     job_definition_name = 'thestral_job_definition'
 
     if not is_compute_env_exists(compute_env_name):
