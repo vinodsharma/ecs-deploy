@@ -14,7 +14,6 @@ jobs:
       - run:
           name: Building Docker Image
           command: |
-            # docker build -t   vinodsharma/circleci-demo-docker:$CIRCLE_SHA1 .
             docker build -t  $DOCKER_IMAGE .
 
       - run:
@@ -29,7 +28,6 @@ jobs:
 	            aws configure set default.region us-west-2
             	aws configure set default.output json
               docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-              # docker push vinodsharma/circleci-demo-docker:$CIRCLE_SHA1
               docker push $DOCKER_IMAGE
               python deploy.py
             fi
@@ -41,7 +39,6 @@ jobs:
 	            aws configure set default.region us-east-1
             	aws configure set default.output json
               docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-              # docker push vinodsharma/circleci-demo-docker:$CIRCLE_SHA1
               docker push $DOCKER_IMAGE
               python deploy.py
             fi

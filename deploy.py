@@ -30,6 +30,7 @@ def read_deploy_config():
     configuration = {
             'AWS_ACCESS_KEY_ID': os.getenv('AWS_ACCESS_KEY_ID'),
             'AWS_SECRET_ACCESS_KEY': os.getenv('AWS_SECRET_ACCESS_KEY'),
+            'AWS_ACCOUNT_ID': os.getenv('AWS_ACCOUNT_ID'),
             'DOCKER_IMAGE': os.getenv('DOCKER_IMAGE'),
     }
     return configuration
@@ -319,7 +320,7 @@ def main():
     # events_client = boto3.client('events', region_name='us-west-2')
     lambda_client = boto3.client('lambda')
     events_client = boto3.client('events')
-    aws_account_id = '739354506037'
+    aws_account_id = boto3.client('sts').get_caller_identity().get('Account')
     fn_name = "HelloWorld"
     # fn_role = 'arn:aws:iam::' + aws_account_id +\
     #     ':role/service-role/BatchRole'
