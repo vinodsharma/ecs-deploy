@@ -18,6 +18,11 @@ formatter = logging.Formatter(
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
+lambda_client = boto3.client('lambda')
+events_client = boto3.client('events')
+batch_client = boto3.client('batch')
+ec2_client = boto3.client('ec2')
+
 
 class Deploy_Exception(Exception):
     pass
@@ -28,31 +33,29 @@ def read_deploy_config():
     load_dotenv(dotenv_path)
 
     configuration = {
-            'AWS_ACCESS_KEY_ID': os.getenv('AWS_ACCESS_KEY_ID'),
-            'AWS_SECRET_ACCESS_KEY': os.getenv('AWS_SECRET_ACCESS_KEY'),
             'AWS_ACCOUNT_ID': os.getenv('AWS_ACCOUNT_ID'),
             'DOCKER_IMAGE': os.getenv('DOCKER_IMAGE'),
     }
     return configuration
 
 
-def get_function_arn(lambda_client, fn_name):
+def get_function_arn(fn_name):
     response = lambda_client.get_function_configuration(
         FunctionName=fn_name
     )
     return response['FunctionArn']
 
 
-def get_function(lambda_client, fn_name):
+def get_function(fn_name):
     response = lambda_client.get_function(
         FunctionName=fn_name
     )
     return response
 
 
-def is_function_exists(lambda_client, fn_name):
+def is_function_exists(fn_name):
     try:
-        get_function(lambda_client, fn_name)
+        get_function(fn_name)
         return True
     except BotoClientError as bce:
         if bce.response['Error']['Code'] == 'ResourceNotFoundException':
@@ -60,7 +63,7 @@ def is_function_exists(lambda_client, fn_name):
         raise
 
 
-def update_function(lambda_client, fn_name):
+def update_function(fn_name):
     zip_file_name = fn_name + ".zip"
     code_file_name = fn_name + ".py"
     create_zip_file_for_code(zip_file_name, code_file_name)
@@ -71,7 +74,7 @@ def update_function(lambda_client, fn_name):
     )
 
 
-def get_rule_arn(events_client, rule_name):
+def get_rule_arn(rule_name):
     response = events_client.describe_rule(
         Name=rule_name
     )
@@ -82,7 +85,7 @@ def create_zip_file_for_code(zip_file_name, code_file_name):
     subprocess.check_output(["zip", zip_file_name, code_file_name])
 
 
-def create_function(lambda_client, fn_role, fn_name):
+def create_function(fn_role, fn_name):
     zip_file_name = fn_name + ".zip"
     code_file_name = fn_name + ".py"
     create_zip_file_for_code(zip_file_name, code_file_name)
@@ -95,7 +98,7 @@ def create_function(lambda_client, fn_role, fn_name):
     )
 
 
-def put_rule(events_client, rule_name):
+def put_rule(rule_name):
     # frequency = "rate(1 hour)"
     frequency = "cron(0 8 ? * mon *)"
     events_client.put_rule(
@@ -105,7 +108,7 @@ def put_rule(events_client, rule_name):
     )
 
 
-def add_permissions(lambda_client, events_client, fn_name, rule_name):
+def add_permissions(events_client, fn_name, rule_name):
     try:
         lambda_client.add_permission(
             FunctionName=fn_name,
@@ -119,7 +122,7 @@ def add_permissions(lambda_client, events_client, fn_name, rule_name):
             raise
 
 
-def put_targets(events_client, fn_arn, rule_name):
+def put_targets(fn_arn, rule_name):
     events_client.put_targets(
         Rule=rule_name,
         Targets=[
@@ -131,7 +134,7 @@ def put_targets(events_client, fn_arn, rule_name):
     )
 
 
-def is_compute_env_exists(batch_client, compute_env_name):
+def is_compute_env_exists(compute_env_name):
     response = batch_client.describe_compute_environments(
         computeEnvironments=[
             compute_env_name,
@@ -143,7 +146,7 @@ def is_compute_env_exists(batch_client, compute_env_name):
         return False
 
 
-def is_job_queue_exists(batch_client, job_queue_name):
+def is_job_queue_exists(job_queue_name):
     response = batch_client.describe_job_queues(
         jobQueues=[
             job_queue_name,
@@ -156,7 +159,7 @@ def is_job_queue_exists(batch_client, job_queue_name):
         return False
 
 
-def is_job_definition_exists(batch_client, job_definition_name):
+def is_job_definition_exists(job_definition_name):
     response = batch_client.describe_job_definitions(
         jobDefinitionName=job_definition_name,
     )
@@ -166,7 +169,7 @@ def is_job_definition_exists(batch_client, job_definition_name):
         return False
 
 
-def get_default_vpc_id(ec2_client):
+def get_default_vpc_id():
     vpcs_info = ec2_client.describe_vpcs(
         Filters=[
             {
@@ -183,7 +186,7 @@ def get_default_vpc_id(ec2_client):
     return vpc_id
 
 
-def get_security_group_ids(ec2_client, vpc_id):
+def get_security_group_ids(vpc_id):
     security_groups_info = ec2_client.describe_security_groups(
         Filters=[
             {
@@ -204,7 +207,7 @@ def get_security_group_ids(ec2_client, vpc_id):
     return security_group_ids
 
 
-def get_subnet_ids(ec2_client, vpc_id):
+def get_subnet_ids(vpc_id):
     subnets_info = ec2_client.describe_subnets(
         Filters=[
             {
@@ -224,10 +227,23 @@ def get_subnet_ids(ec2_client, vpc_id):
     return subnet_ids
 
 
-def create_compute_env(batch_client, compute_env_name,
-                       instance_types, aws_account_id):
-    ec2_client = boto3.client('ec2')
+def create_compute_env(compute_env_name, aws_account_id):
     vpc_id = get_default_vpc_id(ec2_client)
+    instance_types = [
+        'optimal', 'c3', 'c3.2xlarge', 'c3.4xlarge', 'c3.8xlarge', 'c3.large',
+        'c3.xlarge', 'c4', 'c4.2xlarge', 'c4.4xlarge', 'c4.8xlarge',
+        'c4.large', 'c4.xlarge', 'd2', 'd2.2xlarge', 'd2.4xlarge',
+        'd2.8xlarge', 'd2.xlarge', 'g2', 'g2.2xlarge', 'g2.8xlarge', 'g3',
+        'g3.16xlarge', 'g3.4xlarge', 'g3.8xlarge', 'i2', 'i2.2xlarge',
+        'i2.4xlarge', 'i2.8xlarge', 'i2.xlarge', 'i3', 'i3.16xlarge',
+        'i3.2xlarge', 'i3.4xlarge', 'i3.8xlarge', 'i3.xlarge', 'm3',
+        'm3.2xlarge', 'm3.large', 'm3.medium', 'm3.xlarge', 'm4',
+        'm4.10xlarge', 'm4.16xlarge', 'm4.2xlarge', 'm4.4xlarge', 'm4.large',
+        'm4.xlarge', 'p2', 'p2.16xlarge', 'p2.8xlarge', 'p2.xlarge', 'r3',
+        'r3.2xlarge', 'r3.4xlarge', 'r3.8xlarge', 'r3.large', 'r3.xlarge',
+        'r4', 'r4.16xlarge', 'r4.2xlarge', 'r4.4xlarge', 'r4.8xlarge',
+        'r4.large', 'r4.xlarge', 'x1', 'x1.16xlarge', 'x1.32xlarge'
+    ]
     batch_client.create_compute_environment(
         type='MANAGED',
         computeEnvironmentName=compute_env_name,
@@ -250,7 +266,7 @@ def create_compute_env(batch_client, compute_env_name,
     )
 
 
-def wait_until_compute_env_is_ready(batch_client, compute_env_name):
+def wait_until_compute_env_is_ready(compute_env_name):
     for i in range(30):
         sleep(10)
         response = batch_client.describe_compute_environments(
@@ -262,7 +278,7 @@ def wait_until_compute_env_is_ready(batch_client, compute_env_name):
         "TimeOut: Compute Environemnt %s is not ready" % compute_env_name)
 
 
-def wait_until_job_queue_is_ready(batch_client, job_queue_name):
+def wait_until_job_queue_is_ready(job_queue_name):
     for i in range(30):
         sleep(10)
         response = batch_client.describe_job_queues(jobQueues=[job_queue_name])
@@ -273,7 +289,7 @@ def wait_until_job_queue_is_ready(batch_client, job_queue_name):
         "TimeOut: Job Queue %s is not ready" % job_queue_name)
 
 
-def create_job_queue(batch_client, job_queue_name, compute_env_name):
+def create_job_queue(job_queue_name, compute_env_name):
     batch_client.create_job_queue(
         computeEnvironmentOrder=[
             {
@@ -287,7 +303,7 @@ def create_job_queue(batch_client, job_queue_name, compute_env_name):
     )
 
 
-def register_job_definition(batch_client, job_definition_name, docker_image):
+def register_job_definition(job_definition_name, docker_image):
     response = batch_client.register_job_definition(
         type='container',
         containerProperties={
@@ -304,7 +320,7 @@ def register_job_definition(batch_client, job_definition_name, docker_image):
     return response
 
 
-def submit_job(batch_client, job_definition_name, job_name, job_queue_name):
+def submit_job(job_definition_name, job_name, job_queue_name):
     response = batch_client.submit_job(
         jobDefinition=job_definition_name,
         jobName=job_name,
@@ -315,69 +331,39 @@ def submit_job(batch_client, job_definition_name, job_name, job_queue_name):
 
 def main():
     deploy_conf = read_deploy_config()
-    # lambda_client = boto3.client('lambda', region_name='us-west-2')
-    # events_client = boto3.client('events', region_name='us-west-2')
-    lambda_client = boto3.client('lambda')
-    events_client = boto3.client('events')
-    aws_account_id = boto3.client('sts').get_caller_identity().get('Account')
-    fn_name = "HelloWorld"
-    # fn_role = 'arn:aws:iam::' + aws_account_id +\
-    #     ':role/service-role/BatchRole'
-    fn_role = 'arn:aws:iam::' + aws_account_id +\
-        ':role/LambdaBatch'
-
-    if is_function_exists(lambda_client, fn_name):
-        update_function(lambda_client, fn_name)
-    else:
-        create_function(lambda_client, fn_role, fn_name)
-    logger.info("Lamba function created")
-    fn_arn = get_function_arn(lambda_client, fn_name)
-    rule_name = "{0}-Trigger".format(fn_name)
-    put_rule(events_client, rule_name)
-    add_permissions(lambda_client, events_client, fn_name, rule_name)
-    put_targets(events_client, fn_arn, rule_name)
-    logger.info("Cloudwatch Trigger Added")
-
-    batch_client = boto3.client('batch')
-    # batch_client = boto3.client('batch', region_name='us-west-2')
-    compute_env_name = 'V10_M4OnDemand'
-    job_queue_name = 'V10_M4OnDemandQueue'
-    job_definition_name = 'V10_M4OnDemandJobDefinition'
-    job_name = 'V10_M4OnDemandJob'
-    # instance_types = ['m4.large']
-    # instance_types = ['optimal']
-    instance_types = [
-        'optimal', 'c3', 'c3.2xlarge', 'c3.4xlarge', 'c3.8xlarge', 'c3.large',
-        'c3.xlarge', 'c4', 'c4.2xlarge', 'c4.4xlarge', 'c4.8xlarge',
-        'c4.large', 'c4.xlarge', 'd2', 'd2.2xlarge', 'd2.4xlarge',
-        'd2.8xlarge', 'd2.xlarge', 'g2', 'g2.2xlarge', 'g2.8xlarge', 'g3',
-        'g3.16xlarge', 'g3.4xlarge', 'g3.8xlarge', 'i2', 'i2.2xlarge',
-        'i2.4xlarge', 'i2.8xlarge', 'i2.xlarge', 'i3', 'i3.16xlarge',
-        'i3.2xlarge', 'i3.4xlarge', 'i3.8xlarge', 'i3.xlarge', 'm3',
-        'm3.2xlarge', 'm3.large', 'm3.medium', 'm3.xlarge', 'm4',
-        'm4.10xlarge', 'm4.16xlarge', 'm4.2xlarge', 'm4.4xlarge', 'm4.large',
-        'm4.xlarge', 'p2', 'p2.16xlarge', 'p2.8xlarge', 'p2.xlarge', 'r3',
-        'r3.2xlarge', 'r3.4xlarge', 'r3.8xlarge', 'r3.large', 'r3.xlarge',
-        'r4', 'r4.16xlarge', 'r4.2xlarge', 'r4.4xlarge', 'r4.8xlarge',
-        'r4.large', 'r4.xlarge', 'x1', 'x1.16xlarge', 'x1.32xlarge'
-    ]
     docker_image = deploy_conf["DOCKER_IMAGE"]
 
-    if not is_compute_env_exists(batch_client, compute_env_name):
-        create_compute_env(
-            batch_client, compute_env_name,
-            instance_types,  aws_account_id
-        )
+    aws_account_id = boto3.client('sts').get_caller_identity().get('Account')
+    fn_name = "thestral_aws_lambda_function"
+    fn_role = 'arn:aws:iam::' + aws_account_id + ':role/LambdaBatch'
+    if is_function_exists(fn_name):
+        update_function(fn_name)
+    else:
+        create_function(fn_role, fn_name)
+    logger.info("Lambda function %s created" % fn_name)
+    fn_arn = get_function_arn(fn_name)
+    rule_name = "{0}-Trigger".format(fn_name)
+    put_rule(rule_name)
+    add_permissions(fn_name, rule_name)
+    put_targets(fn_arn, rule_name)
+    logger.info("Cloudwatch trigger %s added/updated" % rule_name)
+
+    compute_env_name = 'thestral_comp_env'
+    job_queue_name = 'thestral_job_queue'
+    job_definition_name = 'thestral_job_definition'
+
+    if not is_compute_env_exists(compute_env_name):
+        create_compute_env(compute_env_name, aws_account_id)
         logger.info("Compute environment %s is created" % compute_env_name)
-        logger.info("Waiting for Compute environment to be ready")
-        wait_until_compute_env_is_ready(batch_client, compute_env_name)
-    if not is_job_queue_exists(batch_client, job_queue_name):
-        create_job_queue(batch_client, job_queue_name, compute_env_name)
-        logger.info("Job Queue %s is created" % job_queue_name)
-        logger.info("Waiting for Job Queue to be ready")
-        wait_until_job_queue_is_ready(batch_client, job_queue_name)
-    register_job_definition(batch_client, job_definition_name, docker_image)
-    submit_job(batch_client, job_definition_name, job_name, job_queue_name)
+        logger.info("Waiting for compute environment to be ready")
+        wait_until_compute_env_is_ready(compute_env_name)
+    if not is_job_queue_exists(job_queue_name):
+        create_job_queue(job_queue_name, compute_env_name)
+        logger.info("Job queue %s is created" % job_queue_name)
+        logger.info("Waiting for job queue to be ready")
+        wait_until_job_queue_is_ready(job_queue_name)
+    register_job_definition(job_definition_name, docker_image)
+    logger.info("Job definition is registered")
     logger.info("Deployed Successfully")
 
 
