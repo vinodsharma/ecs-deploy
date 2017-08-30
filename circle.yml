@@ -11,7 +11,7 @@ jobs:
       - setup_remote_docker   # (2)
 
       - run:
-          name: Configure Docker Image Env Varible
+          name: Configure Docker Image Env Variable
           command: |
             echo 'export DOCKER_IMAGE=vinodsharma/circleci-demo-docker:$CIRCLE_SHA1' >> $BASH_ENV
 
@@ -25,14 +25,18 @@ jobs:
           command: |
             python tests/test_*.py
 
+      - run:
+          name: Push Docker Image to Docker Hub
+          command: |
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+            docker push $DOCKER_IMAGE
+
       - deploy:
           name: Deploying to Prod if tests pass and branch is Master
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
               aws configure set default.region us-west-2
               aws configure set default.output json
-              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-              docker push $DOCKER_IMAGE
               python deploy.py
             fi
 
@@ -41,8 +45,6 @@ jobs:
           command: |
             if [ "${CIRCLE_BRANCH}" != "master" ]; then
               aws configure set default.region us-east-1
-              ws configure set default.output json
-              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-              docker push $DOCKER_IMAGE
+              aws configure set default.output json
               python deploy.py
             fi
