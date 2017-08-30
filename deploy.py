@@ -233,7 +233,6 @@ def create_compute_env(batch_client, compute_env_name,
         computeEnvironmentName=compute_env_name,
         computeResources={
             'type': 'EC2',
-            'desiredvCpus': 2,
             'instanceRole': 'arn:aws:iam::' + aws_account_id +
             ':instance-profile/ecsInstanceRole',
             'instanceTypes': instance_types,
@@ -341,10 +340,10 @@ def main():
 
     batch_client = boto3.client('batch')
     # batch_client = boto3.client('batch', region_name='us-west-2')
-    compute_env_name = 'V9_M4OnDemand'
-    job_queue_name = 'V9_M4OnDemandQueue'
-    job_definition_name = 'V9_M4OnDemandJobDefinition'
-    job_name = 'V9_M4OnDemandJob'
+    compute_env_name = 'V10_M4OnDemand'
+    job_queue_name = 'V10_M4OnDemandQueue'
+    job_definition_name = 'V10_M4OnDemandJobDefinition'
+    job_name = 'V10_M4OnDemandJob'
     # instance_types = ['m4.large']
     # instance_types = ['optimal']
     instance_types = [
