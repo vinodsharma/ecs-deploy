@@ -35,7 +35,8 @@ jobs:
           name: Deploying to Prod if tests pass and branch is Master
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              aws configure set default.region us-west-2
+              # aws configure set default.region us-west-2
+              aws configure set default.region us-east-2
               aws configure set default.output json
               python deploy.py
             fi
