@@ -2,13 +2,13 @@ version: 2
 jobs:
   build:
     docker:
-      - image: vinodsharma/python:2.7-devel   # (1)
-    # working_directory: /opt/
+      - image: vinodsharma/python:2.7-devel
+
     steps:
 
       - checkout
 
-      - setup_remote_docker   # (2)
+      - setup_remote_docker
 
       - run:
           name: Configure Docker Image Env Variable
