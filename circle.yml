@@ -2,43 +2,32 @@ version: 2
 jobs:
   build:
     docker:
-      - image: vinodsharma/python:2.7-devel
+      - image: vinodsharma/python:2.7-devel   # (1)
     # working_directory: /opt/
     steps:
 
       - checkout
 
-      - setup_remote_docker
+      - setup_remote_docker   # (2)
 
       - run: echo 'export DOCKER_IMAGE=vinodsharma/circleci-demo-docker:$CIRCLE_SHA1' >> $BASH_ENV
       - run:
-          name: Building Docker Image
+          name: Building Thestral Image
           command: |
+            # docker build -t   vinodsharma/circleci-demo-docker:$CIRCLE_SHA1 .
             docker build -t  $DOCKER_IMAGE .
-
       - run:
           name: Running Tests
           command: |
             python tests/test_*.py
-
-      # - deploy:
-      #     name: Deploying to Prod if tests pass and branch is Master
-      #     command: |
-      #       if [ "${CIRCLE_BRANCH}" == "master" ]; then
-	    #         aws configure set default.region us-west-2
-      #       	aws configure set default.output json
-      #         docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      #         docker push $DOCKER_IMAGE
-      #         python deploy.py
-      #       fi
-
-      # - deploy:
-      #     name: Deploying to staging if tests pass and branch is not Master
-      #     command: |
-      #       if [ "${CIRCLE_BRANCH}" != "master" ]; then
-	    #         aws configure set default.region us-east-1
-      #       	aws configure set default.output json
-      #         docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-      #         docker push $DOCKER_IMAGE
-      #         python deploy.py
-      #       fi
+      - deploy:
+          name: Deploying to AWS
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+	            aws configure set default.region us-west-2
+            	aws configure set default.output json
+              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+              # docker push vinodsharma/circleci-demo-docker:$CIRCLE_SHA1
+              docker push $DOCKER_IMAGE
+              python deploy.py
+            fi
