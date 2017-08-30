@@ -9,3 +9,8 @@ jobs:
       - checkout
 
       - setup_remote_docker   # (2)
+
+      - run:
+          name: Configure Docker Image Env Varible
+          command: |
+            echo 'export DOCKER_IMAGE=vinodsharma/circleci-demo-docker:$CIRCLE_SHA1' >> $BASH_ENV
