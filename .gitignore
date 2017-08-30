@@ -25,3 +25,4 @@ _testmain.go
 
 #Our executable
 go-ecs-ecr
+.env

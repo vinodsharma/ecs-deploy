@@ -6,6 +6,7 @@ import sys
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
+from time import sleep
 
 logger = logging.getLogger('thestral_deployment')
 logger.setLevel(logging.DEBUG)
@@ -18,6 +19,10 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 
+class Deploy_Exception(Exception):
+    pass
+
+
 def read_deploy_config():
     dotenv_path = join(dirname('.'), '.env')
     load_dotenv(dotenv_path)
@@ -25,6 +30,7 @@ def read_deploy_config():
     configuration = {
             'AWS_ACCESS_KEY_ID': os.getenv('AWS_ACCESS_KEY_ID'),
             'AWS_SECRET_ACCESS_KEY': os.getenv('AWS_SECRET_ACCESS_KEY'),
+            'AWS_ACCOUNT_ID': os.getenv('AWS_ACCOUNT_ID'),
             'DOCKER_IMAGE': os.getenv('DOCKER_IMAGE'),
     }
     return configuration
@@ -90,6 +96,8 @@ def create_function(lambda_client, fn_role, fn_name):
 
 
 def put_rule(events_client, rule_name):
+    # frequency = "rate(1 hour)"
+    frequency = "cron(0 8 ? * mon *)"
     events_client.put_rule(
         Name=rule_name,
         ScheduleExpression=frequency,
@@ -158,28 +166,83 @@ def is_job_definition_exists(batch_client, job_definition_name):
         return False
 
 
+def get_default_vpc_id(ec2_client):
+    vpcs_info = ec2_client.describe_vpcs(
+        Filters=[
+            {
+                'Name': 'isDefault',
+                'Values': [
+                    'true',
+                ]
+            },
+        ],
+    )
+    if len(vpcs_info['Vpcs']) < 1:
+        raise Deploy_Exception("No Default VPC Exists")
+    vpc_id = vpcs_info['Vpcs'][0]['VpcId']
+    return vpc_id
+
+
+def get_security_group_ids(ec2_client, vpc_id):
+    security_groups_info = ec2_client.describe_security_groups(
+        Filters=[
+            {
+                'Name': 'vpc-id',
+                'Values': [
+                    vpc_id,
+                ]
+            },
+        ],
+    )
+    if len(security_groups_info['SecurityGroups']) < 1:
+        raise Deploy_Exception(
+            "No SecurityGroup exits for the vpc-id %s" % vpc_id)
+
+    security_group_ids = []
+    for security_group in security_groups_info['SecurityGroups']:
+        security_group_ids.append(security_group['GroupId'])
+    return security_group_ids
+
+
+def get_subnet_ids(ec2_client, vpc_id):
+    subnets_info = ec2_client.describe_subnets(
+        Filters=[
+            {
+                'Name': 'vpc-id',
+                'Values': [
+                    vpc_id,
+                ]
+            },
+        ],
+    )
+    if len(subnets_info['Subnets']) < 1:
+        raise Deploy_Exception("No Subnet exits for the vpc-id %s" % vpc_id)
+
+    subnet_ids = []
+    for subnet in subnets_info['Subnets']:
+        subnet_ids.append(subnet['SubnetId'])
+    return subnet_ids
+
+
 def create_compute_env(batch_client, compute_env_name,
                        instance_types, aws_account_id):
+    ec2_client = boto3.client('ec2')
+    vpc_id = get_default_vpc_id(ec2_client)
     batch_client.create_compute_environment(
         type='MANAGED',
         computeEnvironmentName=compute_env_name,
         computeResources={
             'type': 'EC2',
             'desiredvCpus': 2,
-            'instanceRole': 'ecsInstanceRole',
+            'instanceRole': 'arn:aws:iam::' + aws_account_id +
+            ':instance-profile/ecsInstanceRole',
             'instanceTypes': instance_types,
             'maxvCpus': 256,
-            'minvCpus': 2,
-            'securityGroupIds': [
-                'sg-6b10f90e',
-            ],
-            'subnets': [
-                'subnet-e77c9d82',
-                'subnet-350d0d41',
-                'subnet-e0a380a6',
-            ],
+            'minvCpus': 0,
+            'securityGroupIds': get_security_group_ids(ec2_client, vpc_id),
+            'subnets': get_subnet_ids(ec2_client, vpc_id),
             'tags': {
-                'Name': 'Batch Instance - C4OnDemand',
+                'Name': 'Batch Instance - '+compute_env_name,
             },
         },
         serviceRole='arn:aws:iam::' + aws_account_id +
@@ -188,7 +251,30 @@ def create_compute_env(batch_client, compute_env_name,
     )
 
 
-def create_job_queue(batch_client, job_queue_name):
+def wait_until_compute_env_is_ready(batch_client, compute_env_name):
+    for i in range(30):
+        sleep(10)
+        response = batch_client.describe_compute_environments(
+            computeEnvironments=[compute_env_name])
+        comp_env = response['computeEnvironments'][0]
+        if comp_env['status'] == 'VALID':
+            return
+    raise Deploy_Exception(
+        "TimeOut: Compute Environemnt %s is not ready" % compute_env_name)
+
+
+def wait_until_job_queue_is_ready(batch_client, job_queue_name):
+    for i in range(30):
+        sleep(10)
+        response = batch_client.describe_job_queues(jobQueues=[job_queue_name])
+        job_queue = response['jobQueues'][0]
+        if job_queue['status'] == 'VALID':
+            return
+    raise Deploy_Exception(
+        "TimeOut: Job Queue %s is not ready" % job_queue_name)
+
+
+def create_job_queue(batch_client, job_queue_name, compute_env_name):
     batch_client.create_job_queue(
         computeEnvironmentOrder=[
             {
@@ -216,8 +302,7 @@ def register_job_definition(batch_client, job_definition_name, docker_image):
         },
         jobDefinitionName=job_definition_name,
     )
-
-    logger.info(response)
+    return response
 
 
 def submit_job(batch_client, job_definition_name, job_name, job_queue_name):
@@ -226,37 +311,57 @@ def submit_job(batch_client, job_definition_name, job_name, job_queue_name):
         jobName=job_name,
         jobQueue=job_queue_name,
     )
+    return response
 
-    logger.info(response)
 
-
-if __name__ == "__main__":
+def main():
     deploy_conf = read_deploy_config()
+    # lambda_client = boto3.client('lambda', region_name='us-west-2')
+    # events_client = boto3.client('events', region_name='us-west-2')
     lambda_client = boto3.client('lambda')
     events_client = boto3.client('events')
-    iam_client = boto3.client('iam')
-    aws_account_id = '156083142943'
+    aws_account_id = boto3.client('sts').get_caller_identity().get('Account')
     fn_name = "HelloWorld"
+    # fn_role = 'arn:aws:iam::' + aws_account_id +\
+    #     ':role/service-role/BatchRole'
     fn_role = 'arn:aws:iam::' + aws_account_id +\
-        ':role/service-role/BatchRole'
+        ':role/LambdaBatch'
 
     if is_function_exists(lambda_client, fn_name):
         update_function(lambda_client, fn_name)
     else:
         create_function(lambda_client, fn_role, fn_name)
+    logger.info("Lamba function created")
     fn_arn = get_function_arn(lambda_client, fn_name)
-    frequency = "rate(1 hour)"
     rule_name = "{0}-Trigger".format(fn_name)
     put_rule(events_client, rule_name)
     add_permissions(lambda_client, events_client, fn_name, rule_name)
     put_targets(events_client, fn_arn, rule_name)
+    logger.info("Cloudwatch Trigger Added")
 
     batch_client = boto3.client('batch')
-    compute_env_name = 'V3_M4OnDemand'
-    job_queue_name = 'M4OnDemandQueue'
-    job_definition_name = 'M4OnDemandJobDefinition'
-    job_name = 'M4OnDemandJob'
-    instance_types = ['m4.large']
+    # batch_client = boto3.client('batch', region_name='us-west-2')
+    compute_env_name = 'V9_M4OnDemand'
+    job_queue_name = 'V9_M4OnDemandQueue'
+    job_definition_name = 'V9_M4OnDemandJobDefinition'
+    job_name = 'V9_M4OnDemandJob'
+    # instance_types = ['m4.large']
+    # instance_types = ['optimal']
+    instance_types = [
+        'optimal', 'c3', 'c3.2xlarge', 'c3.4xlarge', 'c3.8xlarge', 'c3.large',
+        'c3.xlarge', 'c4', 'c4.2xlarge', 'c4.4xlarge', 'c4.8xlarge',
+        'c4.large', 'c4.xlarge', 'd2', 'd2.2xlarge', 'd2.4xlarge',
+        'd2.8xlarge', 'd2.xlarge', 'g2', 'g2.2xlarge', 'g2.8xlarge', 'g3',
+        'g3.16xlarge', 'g3.4xlarge', 'g3.8xlarge', 'i2', 'i2.2xlarge',
+        'i2.4xlarge', 'i2.8xlarge', 'i2.xlarge', 'i3', 'i3.16xlarge',
+        'i3.2xlarge', 'i3.4xlarge', 'i3.8xlarge', 'i3.xlarge', 'm3',
+        'm3.2xlarge', 'm3.large', 'm3.medium', 'm3.xlarge', 'm4',
+        'm4.10xlarge', 'm4.16xlarge', 'm4.2xlarge', 'm4.4xlarge', 'm4.large',
+        'm4.xlarge', 'p2', 'p2.16xlarge', 'p2.8xlarge', 'p2.xlarge', 'r3',
+        'r3.2xlarge', 'r3.4xlarge', 'r3.8xlarge', 'r3.large', 'r3.xlarge',
+        'r4', 'r4.16xlarge', 'r4.2xlarge', 'r4.4xlarge', 'r4.8xlarge',
+        'r4.large', 'r4.xlarge', 'x1', 'x1.16xlarge', 'x1.32xlarge'
+    ]
     docker_image = deploy_conf["DOCKER_IMAGE"]
 
     if not is_compute_env_exists(batch_client, compute_env_name):
@@ -264,8 +369,18 @@ if __name__ == "__main__":
             batch_client, compute_env_name,
             instance_types,  aws_account_id
         )
+        logger.info("Compute environment %s is created" % compute_env_name)
+        logger.info("Waiting for Compute environment to be ready")
+        wait_until_compute_env_is_ready(batch_client, compute_env_name)
     if not is_job_queue_exists(batch_client, job_queue_name):
-        create_job_queue(batch_client, job_queue_name)
+        create_job_queue(batch_client, job_queue_name, compute_env_name)
+        logger.info("Job Queue %s is created" % job_queue_name)
+        logger.info("Waiting for Job Queue to be ready")
+        wait_until_job_queue_is_ready(batch_client, job_queue_name)
     register_job_definition(batch_client, job_definition_name, docker_image)
     submit_job(batch_client, job_definition_name, job_name, job_queue_name)
     logger.info("Deployed Successfully")
+
+
+if __name__ == "__main__":
+    main()
