@@ -108,7 +108,7 @@ def put_rule(rule_name):
     )
 
 
-def add_permissions(events_client, fn_name, rule_name):
+def add_permissions(fn_name, rule_name):
     try:
         lambda_client.add_permission(
             FunctionName=fn_name,
