@@ -115,7 +115,7 @@ def add_permissions(fn_name, rule_name):
             StatementId="{0}-Event".format(rule_name),
             Action='lambda:InvokeFunction',
             Principal='events.amazonaws.com',
-            SourceArn=get_rule_arn(events_client, rule_name),
+            SourceArn=get_rule_arn(rule_name),
         )
     except BotoClientError as bce:
         if not bce.response['Error']['Code'] == 'ResourceConflictException':
