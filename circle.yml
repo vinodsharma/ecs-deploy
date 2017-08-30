@@ -19,3 +19,8 @@ jobs:
           name: Building Thestral Image
           command: |
             docker build -t  $DOCKER_IMAGE .
+
+      - run:
+          name: Running Tests
+          command: |
+            python tests/test_*.py
