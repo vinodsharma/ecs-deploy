@@ -252,11 +252,11 @@ if __name__ == "__main__":
     put_targets(events_client, fn_arn, rule_name)
 
     batch_client = boto3.client('batch')
-    compute_env_name = 'V3_M4OnDemand'
-    job_queue_name = 'M4OnDemandQueue'
-    job_definition_name = 'M4OnDemandJobDefinition'
-    job_name = 'M4OnDemandJob'
-    instance_types = ['m4.large']
+    compute_env_name = 'V8_M4OnDemand'
+    job_queue_name = 'V8_M4OnDemandQueue'
+    job_definition_name = 'V8_M4OnDemandJobDefinition'
+    job_name = 'V8_M4OnDemandJob'
+    instance_types = ['optimal']
     docker_repo = "vinodsharma/circleci-demo-docker"
     # docker_image_tag = "459049b9305ed6d5b74f62fe5c06c7620b5e7214"
     docker_image_tag = deploy_conf["CIRCLE_SHA1"]
