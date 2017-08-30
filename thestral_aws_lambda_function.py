@@ -25,7 +25,7 @@ def submit_job(batch_client, job_definition_name, job_name, job_queue_name):
 def lambda_handler(event, context):
     logger.info("submit_job Started")
     batch_client = boto3.client('batch')
-    job_queue_name = 'thestral_job_queue'
+    job_queue_name = 'thestral_job_queue_v1'
     job_definition_name = 'thestral_job_definition'
     job_name = 'thestral_job'
     submit_job(batch_client, job_definition_name, job_name, job_queue_name)
