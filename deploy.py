@@ -228,7 +228,7 @@ def get_subnet_ids(vpc_id):
 
 
 def create_compute_env(compute_env_name, aws_account_id):
-    vpc_id = get_default_vpc_id(ec2_client)
+    vpc_id = get_default_vpc_id()
     instance_types = [
         'optimal', 'c3', 'c3.2xlarge', 'c3.4xlarge', 'c3.8xlarge', 'c3.large',
         'c3.xlarge', 'c4', 'c4.2xlarge', 'c4.4xlarge', 'c4.8xlarge',
@@ -254,8 +254,8 @@ def create_compute_env(compute_env_name, aws_account_id):
             'instanceTypes': instance_types,
             'maxvCpus': 256,
             'minvCpus': 0,
-            'securityGroupIds': get_security_group_ids(ec2_client, vpc_id),
-            'subnets': get_subnet_ids(ec2_client, vpc_id),
+            'securityGroupIds': get_security_group_ids(vpc_id),
+            'subnets': get_subnet_ids(vpc_id),
             'tags': {
                 'Name': 'Batch Instance - '+compute_env_name,
             },
