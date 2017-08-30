@@ -24,3 +24,14 @@ jobs:
           name: Running Tests
           command: |
             python tests/test_*.py
+
+      - deploy:
+          name: Deploying to Production if branch is Master
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+	            aws configure set default.region us-west-2
+            	aws configure set default.output json
+              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+              docker push $DOCKER_IMAGE
+              python deploy.py
+            fi
