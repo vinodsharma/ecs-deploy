@@ -14,3 +14,8 @@ jobs:
           name: Configure Docker Image Env Varible
           command: |
             echo 'export DOCKER_IMAGE=vinodsharma/circleci-demo-docker:$CIRCLE_SHA1' >> $BASH_ENV
+
+      - run:
+          name: Building Thestral Image
+          command: |
+            docker build -t  $DOCKER_IMAGE .
