@@ -32,13 +32,13 @@ jobs:
               python deploy.py
             fi
 
-      - deploy:
-          name: Deploying to staging if tests pass and branch is not Master
-          command: |
-            if [ "${CIRCLE_BRANCH}" != "master" ]; then
-	            aws configure set default.region us-east-1
-            	aws configure set default.output json
-              docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-              docker push $DOCKER_IMAGE
-              python deploy.py
-            fi
+      # - deploy:
+      #     name: Deploying to staging if tests pass and branch is not Master
+      #     command: |
+      #       if [ "${CIRCLE_BRANCH}" != "master" ]; then
+	    #         aws configure set default.region us-east-1
+      #       	aws configure set default.output json
+      #         docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      #         docker push $DOCKER_IMAGE
+      #         python deploy.py
+      #       fi
