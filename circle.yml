@@ -23,6 +23,7 @@ jobs:
       - run:
           name: Running Tests
           command: |
+            pip list
             python tests/test_*.py
 
       - run:
