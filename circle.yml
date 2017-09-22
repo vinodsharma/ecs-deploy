@@ -58,7 +58,7 @@ jobs:
               aws configure set default.output json
               # echo 'export LOGDNA_APP=thestral-staging' >> $BASH_ENV
               export LOGDNA_APP=thestral-staging
-              S3_DIR=$PRODUCTION_S3_DIR
+              export S3_DIR=$PRODUCTION_S3_DIR
               printenv
               python test_deploy.py
               # python deploy.py
