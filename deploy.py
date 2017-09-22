@@ -328,7 +328,7 @@ def main():
         create_function(fn_role, fn_name)
     logger.info("Lambda function %s created" % fn_name)
     fn_arn = get_function_arn(fn_name)
-    rule_name = "{0}-Trigger".format(fn_name)
+    rule_name = "{0}-trigger".format(fn_name)
     put_rule(rule_name)
     add_permissions(fn_name, rule_name)
     put_targets(fn_arn, rule_name)
