@@ -45,6 +45,7 @@ jobs:
               # echo 'export LOGDNA_APP=thestral-production' >> $BASH_ENV
               export LOGDNA_APP=thestral-production
               printenv
+              python test_deploy.py
               # python deploy.py
             fi
 
@@ -57,5 +58,6 @@ jobs:
               # echo 'export LOGDNA_APP=thestral-staging' >> $BASH_ENV
               export LOGDNA_APP=thestral-staging
               printenv
+              python test_deploy.py
               # python deploy.py
             fi
