@@ -23,7 +23,8 @@ jobs:
       - run:
           name: Running Tests
           command: |
-            echo 'export LOGDNA_APP=thestral-testing' >> $BASH_ENV
+            # echo 'export LOGDNA_APP=thestral-testing' >> $BASH_ENV
+            export LOGDNA_APP=thestral-testing
             printenv
             # docker run -t $DOCKER_IMAGE pip list
             python tests/test_*.py
@@ -41,7 +42,8 @@ jobs:
               # aws configure set default.region us-west-2
               aws configure set default.region us-east-2
               aws configure set default.output json
-              echo 'export LOGDNA_APP=thestral-production' >> $BASH_ENV
+              # echo 'export LOGDNA_APP=thestral-production' >> $BASH_ENV
+              export LOGDNA_APP=thestral-production
               printenv
               # python deploy.py
             fi
@@ -52,7 +54,8 @@ jobs:
             if [ "${CIRCLE_BRANCH}" != "master" ]; then
               aws configure set default.region us-east-1
               aws configure set default.output json
-              echo 'export LOGDNA_APP=thestral-staging' >> $BASH_ENV
+              # echo 'export LOGDNA_APP=thestral-staging' >> $BASH_ENV
+              export LOGDNA_APP=thestral-staging
               printenv
               # python deploy.py
             fi
